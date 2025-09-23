@@ -8,11 +8,13 @@
 (define-constant ERR-UNAUTHORIZED (err u106))
 (define-constant ERR-REPORT-CLOSED (err u107))
 (define-constant ERR-INVALID-STATUS (err u108))
+(define-constant ERR-CONTRACT-PAUSED (err u109))
 
 (define-data-var next-report-id uint u1)
 (define-data-var reward-amount uint u1000)
 (define-data-var min-votes-required uint u3)
 (define-data-var verification-threshold uint u70)
+(define-data-var contract-paused bool false)
 
 (define-map reports 
   uint 
@@ -83,15 +85,16 @@
     }))
 )
 
-(define-public (submit-report (location (string-ascii 100)) 
-                             (disease-type (string-ascii 50))
-                             (severity uint)
-                             (photo-hash (string-ascii 64)))
-  (let ((report-id (var-get next-report-id)))
-    (asserts! (<= severity u10) ERR-INVALID-AMOUNT)
-    (asserts! (> (len location) u0) ERR-INVALID-AMOUNT)
-    (asserts! (> (len disease-type) u0) ERR-INVALID-AMOUNT)
-    (asserts! (> (len photo-hash) u0) ERR-INVALID-AMOUNT)
+(define-public (submit-report (location (string-ascii 100))
+                              (disease-type (string-ascii 50))
+                              (severity uint)
+                              (photo-hash (string-ascii 64)))
+   (let ((report-id (var-get next-report-id)))
+     (asserts! (not (var-get contract-paused)) ERR-CONTRACT-PAUSED)
+     (asserts! (<= severity u10) ERR-INVALID-AMOUNT)
+     (asserts! (> (len location) u0) ERR-INVALID-AMOUNT)
+     (asserts! (> (len disease-type) u0) ERR-INVALID-AMOUNT)
+     (asserts! (> (len photo-hash) u0) ERR-INVALID-AMOUNT)
     
     (map-set reports report-id {
       reporter: tx-sender,
@@ -113,10 +116,11 @@
 )
 
 (define-public (vote-on-report (report-id uint) (approve bool))
-  (let ((report-data (unwrap! (map-get? reports report-id) ERR-NOT-FOUND))
-        (vote-key {report-id: report-id, voter: tx-sender}))
-    
-    (asserts! (is-none (map-get? report-votes vote-key)) ERR-ALREADY-VOTED)
+   (let ((report-data (unwrap! (map-get? reports report-id) ERR-NOT-FOUND))
+         (vote-key {report-id: report-id, voter: tx-sender}))
+
+     (asserts! (not (var-get contract-paused)) ERR-CONTRACT-PAUSED)
+     (asserts! (is-none (map-get? report-votes vote-key)) ERR-ALREADY-VOTED)
     (asserts! (is-eq (get status report-data) "pending") ERR-REPORT-CLOSED)
     (asserts! (not (is-eq (get reporter report-data) tx-sender)) ERR-UNAUTHORIZED)
     
@@ -145,8 +149,9 @@
 )
 
 (define-public (claim-reward (report-id uint))
-  (let ((report-data (unwrap! (map-get? reports report-id) ERR-NOT-FOUND)))
-    (asserts! (is-eq (get reporter report-data) tx-sender) ERR-UNAUTHORIZED)
+   (let ((report-data (unwrap! (map-get? reports report-id) ERR-NOT-FOUND)))
+     (asserts! (not (var-get contract-paused)) ERR-CONTRACT-PAUSED)
+     (asserts! (is-eq (get reporter report-data) tx-sender) ERR-UNAUTHORIZED)
     (asserts! (is-eq (get status report-data) "verified") ERR-INVALID-STATUS)
     (asserts! (not (get reward-claimed report-data)) ERR-ALREADY-EXISTS)
     
@@ -160,8 +165,9 @@
 )
 
 (define-public (add-funds (amount uint))
-  (begin
-    (asserts! (> amount u0) ERR-INVALID-AMOUNT)
+   (begin
+     (asserts! (not (var-get contract-paused)) ERR-CONTRACT-PAUSED)
+     (asserts! (> amount u0) ERR-INVALID-AMOUNT)
     (let ((current-balance (get-user-balance tx-sender)))
       (set-user-balance tx-sender (+ current-balance amount))
       (ok amount)
@@ -170,8 +176,9 @@
 )
 
 (define-public (withdraw-funds (amount uint))
-  (let ((current-balance (get-user-balance tx-sender)))
-    (asserts! (>= current-balance amount) ERR-INSUFFICIENT-FUNDS)
+   (let ((current-balance (get-user-balance tx-sender)))
+     (asserts! (not (var-get contract-paused)) ERR-CONTRACT-PAUSED)
+     (asserts! (>= current-balance amount) ERR-INSUFFICIENT-FUNDS)
     (set-user-balance tx-sender (- current-balance amount))
     (ok amount)
   )
@@ -193,6 +200,22 @@
     (var-set min-votes-required new-min)
     (ok new-min)
   )
+)
+
+(define-public (pause-contract)
+   (begin
+     (asserts! (is-eq tx-sender CONTRACT-OWNER) ERR-OWNER-ONLY)
+     (var-set contract-paused true)
+     (ok true)
+   )
+)
+
+(define-public (unpause-contract)
+   (begin
+     (asserts! (is-eq tx-sender CONTRACT-OWNER) ERR-OWNER-ONLY)
+     (var-set contract-paused false)
+     (ok true)
+   )
 )
 
 (define-public (set-verification-threshold (new-threshold uint))
@@ -241,5 +264,9 @@
 )
 
 (define-read-only (get-contract-owner)
-  CONTRACT-OWNER
+   CONTRACT-OWNER
+)
+
+(define-read-only (is-contract-paused)
+   (var-get contract-paused)
 )

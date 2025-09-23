@@ -124,3 +124,24 @@ Help farmers detect and respond to rice diseases faster through:
 ---
 
 Built with ❤️ for the farming community using Stacks blockchain and Clarity smart contracts.
+
+## 🚨 Emergency Pause Functionality
+
+- **Pause Contract**: Allows the contract owner to halt all critical operations instantly in case of security threats.
+- **Unpause Contract**: Restores normal functionality once the issue is resolved.
+- **Check Pause Status**: Read-only function to verify if the contract is currently paused.
+
+### Usage
+
+```clarity
+;; Pause the contract (owner only)
+(contract-call? .Rice-Disease-Detection-Bounty-System pause-contract)
+
+;; Unpause the contract (owner only)
+(contract-call? .Rice-Disease-Detection-Bounty-System unpause-contract)
+
+;; Check if paused
+(contract-call? .Rice-Disease-Detection-Bounty-System is-contract-paused)
+```
+
+This feature enhances security by providing a rapid response mechanism to potential vulnerabilities, ensuring user funds and data integrity. #Security #Blockchain #SmartContracts
