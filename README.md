@@ -145,3 +145,35 @@ Built with ❤️ for the farming community using Stacks blockchain and Clarity 
 ```
 
 This feature enhances security by providing a rapid response mechanism to potential vulnerabilities, ensuring user funds and data integrity. #Security #Blockchain #SmartContracts
+
+### Appeal Rejected Reports
+```clarity
+;; Appeal a rejected report (requires appeal fee)
+(contract-call? .Rice-Disease-Detection-Bounty-System appeal-report u1)
+```
+
+### Set Appeal Fee
+```clarity
+;; Set new appeal fee (owner only)
+(contract-call? .Rice-Disease-Detection-Bounty-System set-appeal-fee u200)
+```
+
+### Check Appeal Fee
+```clarity
+;; Get current appeal fee
+(contract-call? .Rice-Disease-Detection-Bounty-System get-appeal-fee)
+```
+
+## 🔄 Report Appeal Mechanism
+
+- **Appeal Rejected Reports**: Reporters can appeal rejected reports by paying a configurable fee, resetting the report to pending status for re-voting.
+- **Fee-Based Appeals**: Appeals require payment of an appeal fee to prevent spam and ensure commitment.
+- **Re-Voting Process**: Appealed reports return to pending status with votes reset, allowing community to re-evaluate.
+- **One-Time Appeals**: Each report can only be appealed once to maintain system integrity.
+
+### Appeal Flow
+```
+Rejected → Appeal (Pay Fee) → Pending → Re-Voting → Verified/Rejected
+```
+
+This mechanism empowers reporters to challenge incorrect rejections, fostering fairness and encouraging accurate reporting through community consensus. #Fairness #CommunityGovernance #BlockchainTransparency

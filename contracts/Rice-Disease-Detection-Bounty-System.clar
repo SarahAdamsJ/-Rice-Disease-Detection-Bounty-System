@@ -9,14 +9,18 @@
 (define-constant ERR-REPORT-CLOSED (err u107))
 (define-constant ERR-INVALID-STATUS (err u108))
 (define-constant ERR-CONTRACT-PAUSED (err u109))
+(define-constant ERR-APPEAL-FEE-REQUIRED (err u110))
+(define-constant ERR-NOT-REJECTED (err u111))
+(define-constant ERR-ALREADY-APPEALED (err u112))
 
 (define-data-var next-report-id uint u1)
 (define-data-var reward-amount uint u1000)
 (define-data-var min-votes-required uint u3)
 (define-data-var verification-threshold uint u70)
 (define-data-var contract-paused bool false)
+(define-data-var appeal-fee uint u100)
 
-(define-map reports 
+(define-map reports
   uint 
   {
     reporter: principal,
@@ -28,7 +32,8 @@
     status: (string-ascii 20),
     votes-for: uint,
     votes-against: uint,
-    reward-claimed: bool
+    reward-claimed: bool,
+    appealed: bool
   }
 )
 
@@ -106,7 +111,8 @@
       status: "pending",
       votes-for: u0,
       votes-against: u0,
-      reward-claimed: false
+      reward-claimed: false,
+      appealed: false
     })
     
     (var-set next-report-id (+ report-id u1))
@@ -268,5 +274,33 @@
 )
 
 (define-read-only (is-contract-paused)
-   (var-get contract-paused)
+    (var-get contract-paused)
+)
+
+(define-public (appeal-report (report-id uint))
+  (let ((report-data (unwrap! (map-get? reports report-id) ERR-NOT-FOUND))
+        (current-balance (get-user-balance tx-sender))
+        (fee (var-get appeal-fee)))
+    (asserts! (not (var-get contract-paused)) ERR-CONTRACT-PAUSED)
+    (asserts! (is-eq (get reporter report-data) tx-sender) ERR-UNAUTHORIZED)
+    (asserts! (is-eq (get status report-data) "rejected") ERR-NOT-REJECTED)
+    (asserts! (not (get appealed report-data)) ERR-ALREADY-APPEALED)
+    (asserts! (>= current-balance fee) ERR-APPEAL-FEE-REQUIRED)
+    (set-user-balance tx-sender (- current-balance fee))
+    (map-set reports report-id (merge report-data {status: "pending", appealed: true, votes-for: u0, votes-against: u0}))
+    (ok true)
+  )
+)
+
+(define-public (set-appeal-fee (new-fee uint))
+  (begin
+    (asserts! (is-eq tx-sender CONTRACT-OWNER) ERR-OWNER-ONLY)
+    (asserts! (> new-fee u0) ERR-INVALID-AMOUNT)
+    (var-set appeal-fee new-fee)
+    (ok new-fee)
+  )
+)
+
+(define-read-only (get-appeal-fee)
+  (var-get appeal-fee)
 )
