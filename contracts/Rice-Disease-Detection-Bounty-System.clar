@@ -12,6 +12,7 @@
 (define-constant ERR-APPEAL-FEE-REQUIRED (err u110))
 (define-constant ERR-NOT-REJECTED (err u111))
 (define-constant ERR-ALREADY-APPEALED (err u112))
+(define-constant ERR-REPORT-EXPIRED (err u113))
 
 (define-data-var next-report-id uint u1)
 (define-data-var reward-amount uint u1000)
@@ -19,6 +20,7 @@
 (define-data-var verification-threshold uint u70)
 (define-data-var contract-paused bool false)
 (define-data-var appeal-fee uint u100)
+(define-data-var report-expiry-blocks uint u1440)
 
 (define-map reports
   uint 
@@ -78,6 +80,13 @@
     (>= approval-rate (var-get verification-threshold)))
 )
 
+(define-private (is-report-expired (report-id uint))
+  (match (map-get? reports report-id)
+    report-data
+    (> (- stacks-block-height (get timestamp report-data)) (var-get report-expiry-blocks))
+    false)
+)
+
 (define-private (update-disease-stats (disease-type (string-ascii 50)) (is-verified bool))
   (let ((current-stats (default-to {total-reports: u0, verified-reports: u0, last-reported: u0} 
                                   (map-get? disease-stats disease-type))))
@@ -129,6 +138,7 @@
      (asserts! (is-none (map-get? report-votes vote-key)) ERR-ALREADY-VOTED)
     (asserts! (is-eq (get status report-data) "pending") ERR-REPORT-CLOSED)
     (asserts! (not (is-eq (get reporter report-data) tx-sender)) ERR-UNAUTHORIZED)
+    (asserts! (not (is-report-expired report-id)) ERR-REPORT-EXPIRED)
     
     (map-set report-votes vote-key approve)
     
@@ -301,6 +311,19 @@
   )
 )
 
+(define-public (set-report-expiry-blocks (new-expiry uint))
+  (begin
+    (asserts! (is-eq tx-sender CONTRACT-OWNER) ERR-OWNER-ONLY)
+    (asserts! (> new-expiry u0) ERR-INVALID-AMOUNT)
+    (var-set report-expiry-blocks new-expiry)
+    (ok new-expiry)
+  )
+)
+
 (define-read-only (get-appeal-fee)
   (var-get appeal-fee)
+)
+
+(define-read-only (get-report-expiry-blocks)
+  (var-get report-expiry-blocks)
 )

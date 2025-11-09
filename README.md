@@ -176,4 +176,28 @@ This feature enhances security by providing a rapid response mechanism to potent
 Rejected → Appeal (Pay Fee) → Pending → Re-Voting → Verified/Rejected
 ```
 
+## ⏰ Report Expiration Mechanism
+
+- **Automatic Expiration**: Reports automatically expire after a configurable number of blocks, preventing stale data from lingering in the system.
+- **Configurable Duration**: Contract owner can adjust the expiration period to balance timeliness and community participation.
+- **Voting Protection**: Expired reports cannot receive new votes, ensuring only current and relevant reports are evaluated.
+- **System Efficiency**: Reduces storage overhead by naturally pruning outdated reports through expiration.
+
+### Usage
+
+```clarity
+;; Set report expiry duration (owner only)
+(contract-call? .Rice-Disease-Detection-Bounty-System set-report-expiry-blocks u2880)
+
+;; Get current expiry setting
+(contract-call? .Rice-Disease-Detection-Bounty-System get-report-expiry-blocks)
+```
+
+### Expiration Flow
+
+```
+Report Submitted → Active for Voting → Expires After Time Limit → No Further Voting Allowed
+```
+
+This feature ensures data freshness and system performance by automatically managing report lifecycle, keeping the platform focused on current disease detection needs. #DataFreshness #SystemEfficiency #BlockchainOptimization
 This mechanism empowers reporters to challenge incorrect rejections, fostering fairness and encouraging accurate reporting through community consensus. #Fairness #CommunityGovernance #BlockchainTransparency
