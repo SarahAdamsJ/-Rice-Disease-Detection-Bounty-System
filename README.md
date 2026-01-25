@@ -201,3 +201,18 @@ Report Submitted → Active for Voting → Expires After Time Limit → No Furth
 
 This feature ensures data freshness and system performance by automatically managing report lifecycle, keeping the platform focused on current disease detection needs. #DataFreshness #SystemEfficiency #BlockchainOptimization
 This mechanism empowers reporters to challenge incorrect rejections, fostering fairness and encouraging accurate reporting through community consensus. #Fairness #CommunityGovernance #BlockchainTransparency
+
+## 🔄 Report Withdrawal Mechanism
+
+- **User Control**: Allows reporters to withdraw pending reports before votes are cast, providing flexibility and error correction.
+- **Prevents Lock-in**: Ensures users can retract submissions without consequences if conditions change.
+- **System Integrity**: Maintains data accuracy by allowing removal of unsubmitted or erroneous reports.
+
+### Usage
+
+```clarity
+;; Withdraw a pending report with no votes
+(contract-call? .Rice-Disease-Detection-Bounty-System withdraw-report u1)
+```
+
+This feature enhances user autonomy and trust by giving reporters the power to manage their contributions effectively, promoting a more responsive and user-friendly platform. #UserControl #Flexibility #BlockchainTrust

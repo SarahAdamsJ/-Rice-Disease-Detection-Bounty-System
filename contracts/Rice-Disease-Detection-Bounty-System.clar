@@ -327,3 +327,12 @@
 (define-read-only (get-report-expiry-blocks)
   (var-get report-expiry-blocks)
 )
+
+(define-public (withdraw-report (report-id uint))
+  (let ((report-data (unwrap! (map-get? reports report-id) ERR-NOT-FOUND)))
+    (asserts! (is-eq (get reporter report-data) tx-sender) ERR-UNAUTHORIZED)
+    (asserts! (is-eq (get status report-data) "pending") ERR-INVALID-STATUS)
+    (asserts! (is-eq (+ (get votes-for report-data) (get votes-against report-data)) u0) ERR-ALREADY-VOTED)
+    (map-set reports report-id (merge report-data {status: "withdrawn"}))
+    (ok true)))
+
